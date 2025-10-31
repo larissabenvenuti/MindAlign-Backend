@@ -14,7 +14,10 @@ export const requireAuth = (
   const token = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7)
     : authHeader;
-  if (!token) return res.status(401).send("Token ausente");
+  
+  if (!token) {
+    return res.status(401).json({ error: "Token ausente" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
@@ -23,6 +26,6 @@ export const requireAuth = (
     req.userId = decoded.id;
     next();
   } catch {
-    res.status(401).send("Token inválido");
+    res.status(401).json({ error: "Token inválido" });
   }
 };

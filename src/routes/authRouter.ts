@@ -10,9 +10,13 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 router.post("/api/auth/register", async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
-    if (!email || !password) return res.status(400).send("Faltando dados");
+
+    if (!email || !password) return res.status(400).json({ error: "Faltando dados" });
+    
     const exists = await prisma.user.findUnique({ where: { email } });
-    if (exists) return res.status(400).send("Usuário já existe");
+    
+    if (exists) return res.status(400).json({ error: "Usuário já existe" });
+    
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: { email, password: hashed, name },
@@ -27,16 +31,20 @@ router.post("/api/auth/register", async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error("Erro no cadastro:", err.message);
-    res.status(500).send("Erro interno no cadastro");
+    res.status(500).json({ error: "Erro interno no cadastro" });
   }
 });
 
 router.post("/api/auth/login", async (req: Request, res: Response) => {
   const { email, password } = req.body;
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.password) return res.status(401).send("Dados inválidos");
+  
+  if (!user || !user.password) return res.status(401).json({ error: "Dados inválidos" });
+  
   const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) return res.status(401).send("Dados inválidos");
+  
+  if (!isValid) return res.status(401).json({ error: "Dados inválidos" });
+  
   const token = jwt.sign(
     { id: user.id, email: user.email, name: user.name },
     process.env.JWT_SECRET as string,
@@ -55,15 +63,19 @@ router.post("/api/auth/login", async (req: Request, res: Response) => {
 
 router.post("/api/auth/google", async (req: Request, res: Response) => {
   const { token } = req.body as { token?: string };
-  if (!token) return res.status(400).send("Token ausente.");
+  
+  if (!token) return res.status(400).json({ error: "Token ausente." });
+  
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
+    
     if (!payload || !payload.email)
-      return res.status(401).send("Token inválido.");
+      return res.status(401).json({ error: "Token inválido." });
+      
     const { email, name, picture } = payload;
     let user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -87,7 +99,7 @@ router.post("/api/auth/google", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Erro login Google:", error.message);
-    return res.status(401).send("Falha ao autenticar Google.");
+    return res.status(401).json({ error: "Falha ao autenticar Google." });
   }
 });
 
