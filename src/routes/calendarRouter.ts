@@ -38,17 +38,12 @@ router.post(
           .status(400)
           .json({ error: "Título, início e término são obrigatórios" });
       }
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return res.status(400).json({ error: "Data inválida" });
-      }
 
       const event = await prisma.event.create({
         data: {
           title,
-          start: startDate,
-          end: endDate,
+          start,
+          end,
           userId,
         },
       });
