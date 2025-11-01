@@ -23,8 +23,8 @@ model User {
 model Event {
   id        String   @id @default(uuid())
   title     String
-  start     String
-  end       String
+  start     DateTime
+  end       DateTime
   user      User     @relation(fields: [userId], references: [id])
   userId    String
 }
@@ -54,3 +54,4 @@ model Task {
   user      User     @relation(fields: [userId], references: [id])
   userId    String
 }
+

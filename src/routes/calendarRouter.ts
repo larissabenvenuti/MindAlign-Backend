@@ -10,14 +10,10 @@ router.get(
   async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.userId!;
-      const eventsRaw = await prisma.event.findMany({
+      const events = await prisma.event.findMany({
         where: { userId },
         orderBy: { start: "asc" },
       });
-      const events = eventsRaw.map((ev) => ({
-        ...ev,
-        allDay: false,
-      }));
       res.json(events);
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -33,20 +29,35 @@ router.post(
     try {
       const userId = req.userId!;
       const { title, start, end } = req.body;
+
       if (!title || !start || !end) {
         return res
           .status(400)
           .json({ error: "Título, início e término são obrigatórios" });
       }
 
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: "Data inválida" });
+      }
+
+      if (startDate >= endDate) {
+        return res
+          .status(400)
+          .json({ error: "A data de início deve ser anterior à data de término" });
+      }
+
       const event = await prisma.event.create({
         data: {
           title,
-          start,
-          end,
+          start: startDate,
+          end: endDate,
           userId,
         },
       });
+
       res.status(201).json(event);
     } catch (error) {
       console.error("Error creating event:", error);
@@ -72,12 +83,31 @@ router.put(
         return res.status(404).json({ error: "Evento não encontrado" });
       }
 
+      if (!title || !start || !end) {
+        return res
+          .status(400)
+          .json({ error: "Título, início e término são obrigatórios" });
+      }
+
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: "Data inválida" });
+      }
+
+      if (startDate >= endDate) {
+        return res
+          .status(400)
+          .json({ error: "A data de início deve ser anterior à data de término" });
+      }
+
       const event = await prisma.event.update({
         where: { id },
         data: {
           title,
-          start: start,
-          end: end,
+          start: startDate,
+          end: endDate,
         },
       });
 
