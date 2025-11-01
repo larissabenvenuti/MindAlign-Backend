@@ -81,8 +81,8 @@ router.put(
         where: { id },
         data: {
           title,
-          start: new Date(start),
-          end: new Date(end),
+          start: start,
+          end: end,
         },
       });
 
